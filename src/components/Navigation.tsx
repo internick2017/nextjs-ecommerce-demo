@@ -14,6 +14,7 @@ export default function Navigation() {
     { href: '/cart', label: 'Cart' },
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/api-demo', label: 'API Demo' },
+    { href: '/crud-demo', label: 'CRUD Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
