@@ -31,6 +31,20 @@ import {
   HeaderConfig,
   CookieConfig
 } from './headerHandler';
+import {
+  withRedirects,
+  RedirectHandler,
+  RedirectRule,
+  redirectUtils,
+  RedirectType
+} from './redirectHandler';
+import {
+  CacheHandler,
+  withCache,
+  cachePresets,
+  cacheUtils,
+  CacheConfig
+} from './cacheHandler';
 
 // Generic CRUD interface
 export interface CrudEntity {
@@ -90,6 +104,9 @@ export interface RouteHandlerConfig {
   headers?: HeaderConfig;
   cookies?: CookieConfig;
   enableRequestValidation?: boolean;
+  redirects?: RedirectRule[];
+  cache?: CacheConfig;
+  enableCache?: boolean;
 }
 
 // Base route handler class
@@ -228,6 +245,16 @@ export abstract class BaseRouteHandler<T extends CrudEntity> {
     // Add cookie handling
     if (this.config.cookies) {
       middlewareStack = withCookies(this.config.cookies)(middlewareStack);
+    }
+
+    // Add redirect handling
+    if (this.config.redirects && this.config.redirects.length > 0) {
+      middlewareStack = withRedirects(this.config.redirects)(middlewareStack);
+    }
+
+    // Add cache handling
+    if (this.config.enableCache && this.config.cache) {
+      middlewareStack = withCache(this.config.cache)(middlewareStack);
     }
 
     return middlewareStack;

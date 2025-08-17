@@ -16,6 +16,7 @@ export default function Navigation() {
     { href: '/api-demo', label: 'API Demo' },
     { href: '/crud-demo', label: 'CRUD Demo' },
     { href: '/headers-cookies-demo', label: 'Headers & Cookies Demo' },
+    { href: '/redirects-cache-demo', label: 'Redirects & Cache Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
