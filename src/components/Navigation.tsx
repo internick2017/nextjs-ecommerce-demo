@@ -15,6 +15,7 @@ export default function Navigation() {
     { href: '/dashboard', label: 'Dashboard' },
     { href: '/api-demo', label: 'API Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
+    { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
   ];
 

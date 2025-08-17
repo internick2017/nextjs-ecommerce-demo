@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import Navigation from "../components/Navigation";
-import ErrorBoundary from "../components/ErrorBoundary";
+import GlobalErrorBoundary from "../components/GlobalErrorBoundary";
+import GlobalErrorMonitor from "../components/GlobalErrorMonitor";
 import Link from "next/link";
 
 const geistSans = Geist({
@@ -30,14 +31,21 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ErrorBoundary>
+        <GlobalErrorBoundary
+          enableGlobalErrorHandling={true}
+          showErrorDetails={process.env.NODE_ENV === 'development'}
+          onGlobalError={(event) => {
+            console.log('Global error detected:', event);
+          }}
+        >
           <div className="min-h-screen bg-gray-50">
             <Navigation />
             <main className="container mx-auto px-4 py-8">
               {children}
             </main>
           </div>
-        </ErrorBoundary>
+          <GlobalErrorMonitor />
+        </GlobalErrorBoundary>
         <footer className="bg-gray-800 text-white py-12 mt-16">
           <div className="container mx-auto px-4">
             <div className="grid md:grid-cols-4 gap-8">
