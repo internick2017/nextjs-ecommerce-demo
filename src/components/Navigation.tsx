@@ -27,6 +27,7 @@ export default function Navigation() {
     { href: '/params-demo', label: 'Params Demo' },
     { href: '/context-forms-demo', label: 'Context & Forms Demo' },
     { href: '/data-fetching-demo', label: 'Data Fetching Demo' },
+    { href: '/advanced-data-fetching-demo', label: 'Advanced Data Fetching Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
