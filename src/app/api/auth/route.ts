@@ -16,6 +16,14 @@ import {
   HeaderConfig,
   CookieConfig
 } from '../../../lib/headerHandler';
+import {
+  withGuest,
+  withRateLimit as withRateLimitMiddleware,
+  withValidation,
+  withCors,
+  sessionUtils,
+  Session
+} from '../../../lib/routeMiddleware';
 import { AppError } from '../../../lib/errorHandler';
 
 // Authentication configuration
@@ -93,17 +101,6 @@ function validateToken(token: string): { userId: string; role: string } | null {
 
 // Login handler
 const loginHandler = async (request: NextRequest) => {
-  // Validate request headers
-  const validation = RequestHeaderUtils.validateHeaders(request);
-  if (!validation.valid) {
-    throw new AppError(`Request validation failed: ${validation.errors.join(', ')}`, 400);
-  }
-
-  // Check if request accepts JSON
-  if (!RequestHeaderUtils.acceptsJSON(request)) {
-    throw new AppError('Request must accept JSON', 406);
-  }
-
   const body = await request.json();
   const { email, password } = body;
 
@@ -118,8 +115,13 @@ const loginHandler = async (request: NextRequest) => {
     throw new AppError('Invalid credentials', 401);
   }
 
-  // Generate token
-  const token = generateToken(user.id, user.role);
+  // Create session
+  const sessionToken = await sessionUtils.createSession(
+    user.id,
+    user.email,
+    user.role,
+    ['read', 'write'] // Default permissions
+  );
 
   // Get client information
   const clientIP = RequestHeaderUtils.getClientIP(request);
@@ -137,7 +139,10 @@ const loginHandler = async (request: NextRequest) => {
         name: user.name,
         role: user.role
       },
-      token: token
+      session: {
+        token: sessionToken,
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+      }
     },
     metadata: {
       clientIP,
@@ -156,11 +161,11 @@ const loginHandler = async (request: NextRequest) => {
   const cookieHandler = new CookieHandler(authCookieConfig);
 
   // Set auth token cookie
-  cookieHandler.setCookie(response, 'authToken', token, {
+  cookieHandler.setCookie(response, 'authToken', sessionToken, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'strict',
-    maxAge: 7 * 24 * 60 * 60, // 7 days
+    maxAge: 24 * 60 * 60, // 24 hours
     path: '/'
   });
 
@@ -173,16 +178,7 @@ const loginHandler = async (request: NextRequest) => {
     httpOnly: false, // Accessible by JavaScript
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 7 * 24 * 60 * 60,
-    path: '/'
-  });
-
-  // Set session cookie
-  cookieHandler.setCookie(response, 'sessionId', `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
-    maxAge: 24 * 60 * 60, // 24 hours
+    maxAge: 24 * 60 * 60,
     path: '/'
   });
 
@@ -191,6 +187,14 @@ const loginHandler = async (request: NextRequest) => {
 
 // Logout handler
 const logoutHandler = async (request: NextRequest) => {
+  const token = request.cookies.get('authToken')?.value ||
+               request.headers.get('authorization')?.replace('Bearer ', '');
+
+  // Invalidate session if token exists
+  if (token) {
+    await sessionUtils.invalidateSession(token);
+  }
+
   // Get client information
   const clientIP = RequestHeaderUtils.getClientIP(request);
   const userAgent = RequestHeaderUtils.getUserAgent(request);
@@ -214,29 +218,20 @@ const logoutHandler = async (request: NextRequest) => {
 
   cookieHandler.deleteCookie(response, 'authToken');
   cookieHandler.deleteCookie(response, 'userInfo');
-  cookieHandler.deleteCookie(response, 'sessionId');
 
   return response;
 };
 
 // Verify token handler
 const verifyHandler = async (request: NextRequest) => {
-  // Get auth token from cookies or headers
-  const authToken = request.cookies.get('authToken')?.value ||
-                   request.headers.get('authorization')?.replace('Bearer ', '');
+  const session = await sessionUtils.getSession(request);
 
-  if (!authToken) {
-    throw new AppError('No authentication token provided', 401);
-  }
-
-  // Validate token
-  const tokenData = validateToken(authToken);
-  if (!tokenData) {
-    throw new AppError('Invalid or expired token', 401);
+  if (!session) {
+    throw new AppError('No valid session found', 401);
   }
 
   // Find user
-  const user = users.find(u => u.id === tokenData.userId);
+  const user = users.find(u => u.id === session.userId);
   if (!user) {
     throw new AppError('User not found', 404);
   }
@@ -247,7 +242,7 @@ const verifyHandler = async (request: NextRequest) => {
 
   const response = headerUtils.createResponse({
     success: true,
-    message: 'Token is valid',
+    message: 'Session is valid',
     data: {
       user: {
         id: user.id,
@@ -255,9 +250,12 @@ const verifyHandler = async (request: NextRequest) => {
         name: user.name,
         role: user.role
       },
-      tokenData: {
-        userId: tokenData.userId,
-        role: tokenData.role
+      session: {
+        userId: session.userId,
+        role: session.role,
+        permissions: session.permissions,
+        expiresAt: new Date(session.expiresAt).toISOString(),
+        lastActivity: new Date(session.lastActivity).toISOString()
       }
     },
     metadata: {
@@ -270,7 +268,7 @@ const verifyHandler = async (request: NextRequest) => {
   // Set security headers
   ResponseHeaderUtils.setNoCacheHeaders(response);
   response.headers.set('X-Auth-Status', 'valid');
-  response.headers.set('X-User-Role', user.role);
+  response.headers.set('X-User-Role', session.role);
 
   return response;
 };
@@ -294,9 +292,14 @@ const authHandler = async (request: NextRequest) => {
 
 // Export handlers with middleware
 export const POST = compose(
-  withRequestValidation(),
-  withLogging,
-  withRateLimit(10, 15 * 60 * 1000), // 10 requests per 15 minutes
+  withGuest({ requireGuest: true, redirectIfAuthenticated: '/dashboard' }),
+  withRateLimitMiddleware(10, 15 * 60 * 1000), // 10 requests per 15 minutes
+  withValidation({
+    requiredHeaders: ['content-type'],
+    validateContentType: true,
+    maxBodySize: 1024 * 1024 // 1MB
+  }),
+  withCors(['http://localhost:3000'], ['POST', 'OPTIONS']),
   withHeaders(authHeaderConfig),
   withCookies(authCookieConfig),
   withErrorHandler
