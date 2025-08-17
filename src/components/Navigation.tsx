@@ -19,6 +19,7 @@ export default function Navigation() {
     { href: '/redirects-cache-demo', label: 'Redirects & Cache Demo' },
     { href: '/middleware-demo', label: 'Middleware Demo' },
     { href: '/suspense-rendering-demo', label: 'Suspense & Rendering Demo' },
+    { href: '/ssr-streaming-demo', label: 'SSR & Streaming Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
