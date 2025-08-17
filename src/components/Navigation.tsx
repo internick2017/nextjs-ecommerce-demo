@@ -29,6 +29,7 @@ export default function Navigation() {
     { href: '/data-fetching-demo', label: 'Data Fetching Demo' },
     { href: '/advanced-data-fetching-demo', label: 'Advanced Data Fetching Demo' },
     { href: '/database-operations-demo', label: 'Database Operations Demo' },
+    { href: '/server-actions-demo', label: 'Server Actions Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
