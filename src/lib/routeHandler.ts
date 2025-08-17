@@ -19,6 +19,18 @@ import {
   validatePositiveNumber,
   validateStringLength
 } from './errorHandler';
+import {
+  withHeaders,
+  withCookies,
+  withRequestValidation,
+  HeaderHandler,
+  CookieHandler,
+  RequestHeaderUtils,
+  ResponseHeaderUtils,
+  headerUtils,
+  HeaderConfig,
+  CookieConfig
+} from './headerHandler';
 
 // Generic CRUD interface
 export interface CrudEntity {
@@ -75,6 +87,9 @@ export interface RouteHandlerConfig {
     required?: string[];
     rules?: Record<string, (value: any) => boolean>;
   };
+  headers?: HeaderConfig;
+  cookies?: CookieConfig;
+  enableRequestValidation?: boolean;
 }
 
 // Base route handler class
@@ -176,6 +191,11 @@ export abstract class BaseRouteHandler<T extends CrudEntity> {
   protected createMiddlewareStack(handler: Function) {
     let middlewareStack = handler;
 
+    // Add request validation
+    if (this.config.enableRequestValidation) {
+      middlewareStack = withRequestValidation()(middlewareStack);
+    }
+
     // Add error handling
     middlewareStack = withErrorHandler(middlewareStack);
 
@@ -198,6 +218,16 @@ export abstract class BaseRouteHandler<T extends CrudEntity> {
     // Add CORS
     if (this.config.enableCors) {
       middlewareStack = withCors()(middlewareStack);
+    }
+
+    // Add header handling
+    if (this.config.headers) {
+      middlewareStack = withHeaders(this.config.headers)(middlewareStack);
+    }
+
+    // Add cookie handling
+    if (this.config.cookies) {
+      middlewareStack = withCookies(this.config.cookies)(middlewareStack);
     }
 
     return middlewareStack;
@@ -238,17 +268,44 @@ export class CrudRouteHandler<T extends CrudEntity> extends BaseRouteHandler<T> 
       const sortBy = searchParams.get('sortBy') || undefined;
       const sortOrder = (searchParams.get('sortOrder') as 'asc' | 'desc') || 'asc';
 
+      // Get client information
+      const clientIP = RequestHeaderUtils.getClientIP(request);
+      const userAgent = RequestHeaderUtils.getUserAgent(request);
+      const acceptLanguage = RequestHeaderUtils.getAcceptLanguage(request);
+
       if (id) {
         // Get single entity
         const entity = await this.operations.read(id);
         if (!entity) {
           throw new NotFoundError(`${this.entityName} with ID ${id}`);
         }
-        return NextResponse.json({
+
+        // Generate ETag for caching
+        const headerHandler = new HeaderHandler(this.config.headers);
+        const etag = headerHandler.generateETag(JSON.stringify(entity));
+
+        // Check if content has changed
+        if (headerHandler.checkETag(request, etag)) {
+          return new NextResponse(null, { status: 304 });
+        }
+
+        const response = headerUtils.createResponse({
           success: true,
           data: entity,
-          message: `${this.entityName} retrieved successfully`
+          message: `${this.entityName} retrieved successfully`,
+          metadata: {
+            clientIP,
+            userAgent,
+            language: acceptLanguage,
+            timestamp: new Date().toISOString()
+          }
         });
+
+        // Apply cache headers
+        ResponseHeaderUtils.setCacheHeaders(response, 300, 60);
+        response.headers.set('ETag', etag);
+
+        return response;
       } else {
         // Get all entities with pagination and search
         let entities = await this.operations.readAll();
@@ -266,17 +323,40 @@ export class CrudRouteHandler<T extends CrudEntity> extends BaseRouteHandler<T> 
           sortOrder
         });
 
-        return NextResponse.json({
+        const response = headerUtils.createResponse({
           success: true,
           data: paginatedResult.data,
           pagination: paginatedResult.pagination,
-          message: `${this.entityName}s retrieved successfully`
+          message: `${this.entityName}s retrieved successfully`,
+          metadata: {
+            clientIP,
+            userAgent,
+            language: acceptLanguage,
+            searchTerm: search,
+            sortBy,
+            sortOrder,
+            timestamp: new Date().toISOString()
+          }
         });
+
+        // Apply pagination headers
+        ResponseHeaderUtils.setPaginationHeaders(
+          response,
+          paginatedResult.pagination.currentPage,
+          paginatedResult.pagination.totalPages,
+          paginatedResult.pagination.totalItems,
+          paginatedResult.pagination.itemsPerPage
+        );
+
+        // Apply cache headers for list responses
+        ResponseHeaderUtils.setCacheHeaders(response, 60, 30);
+
+        return response;
       }
     });
   }
 
-  // POST - Create new entity
+    // POST - Create new entity
   postHandler(): (request: NextRequest) => Promise<NextResponse> {
     return this.createMiddlewareStack(async (request: NextRequest) => {
       const body = await request.json();
@@ -292,11 +372,25 @@ export class CrudRouteHandler<T extends CrudEntity> extends BaseRouteHandler<T> 
       // Create entity
       const newEntity = await this.operations.create(validatedData as Omit<T, 'id'>);
 
-      return NextResponse.json({
+      // Get client information
+      const clientIP = RequestHeaderUtils.getClientIP(request);
+      const userAgent = RequestHeaderUtils.getUserAgent(request);
+
+      const response = headerUtils.createResponse({
         success: true,
         data: newEntity,
-        message: `${this.entityName} created successfully`
-      }, { status: 201 });
+        message: `${this.entityName} created successfully`,
+        metadata: {
+          clientIP,
+          userAgent,
+          timestamp: new Date().toISOString()
+        }
+      }, 201);
+
+      // Set no-cache headers for creation responses
+      ResponseHeaderUtils.setNoCacheHeaders(response);
+
+      return response;
     });
   }
 
