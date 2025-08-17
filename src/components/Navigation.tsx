@@ -20,6 +20,7 @@ export default function Navigation() {
     { href: '/middleware-demo', label: 'Middleware Demo' },
     { href: '/suspense-rendering-demo', label: 'Suspense & Rendering Demo' },
     { href: '/ssr-streaming-demo', label: 'SSR & Streaming Demo' },
+    { href: '/params-demo', label: 'Params Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
