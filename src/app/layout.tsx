@@ -4,6 +4,8 @@ import "./globals.css";
 import Navigation from "../components/Navigation";
 import GlobalErrorBoundary from "../components/GlobalErrorBoundary";
 import GlobalErrorMonitor from "../components/GlobalErrorMonitor";
+import { AppProvider } from "../contexts/AppContext";
+import { NotificationSystem } from "../components/NotificationSystem";
 import Link from "next/link";
 
 const geistSans = Geist({
@@ -38,13 +40,16 @@ export default function RootLayout({
             console.log('Global error detected:', event);
           }}
         >
-          <div className="min-h-screen bg-gray-50">
-            <Navigation />
-            <main className="container mx-auto px-4 py-8">
-              {children}
-            </main>
-          </div>
-          <GlobalErrorMonitor />
+          <AppProvider>
+            <div className="min-h-screen bg-gray-50">
+              <Navigation />
+              <main className="container mx-auto px-4 py-8">
+                {children}
+              </main>
+            </div>
+            <NotificationSystem />
+            <GlobalErrorMonitor />
+          </AppProvider>
         </GlobalErrorBoundary>
         <footer className="bg-gray-800 text-white py-12 mt-16">
           <div className="container mx-auto px-4">

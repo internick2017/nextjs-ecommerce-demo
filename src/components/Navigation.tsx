@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useAuth, useCart, useUI } from '../contexts/AppContext';
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { user, isAuthenticated, logout } = useAuth();
+  const { cartItemCount } = useCart();
+  const { theme, setTheme } = useUI();
 
   const navLinks = [
     { href: '/', label: 'Home' },
@@ -21,6 +25,7 @@ export default function Navigation() {
     { href: '/suspense-rendering-demo', label: 'Suspense & Rendering Demo' },
     { href: '/ssr-streaming-demo', label: 'SSR & Streaming Demo' },
     { href: '/params-demo', label: 'Params Demo' },
+    { href: '/context-forms-demo', label: 'Context & Forms Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
     { href: '/login', label: 'Login' },
@@ -76,9 +81,37 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Link href="/cart" className="text-gray-600 hover:text-blue-600 transition-colors">
+            <button
+              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+              className="text-gray-600 hover:text-blue-600 transition-colors p-2 rounded-md"
+            >
+              {theme === 'light' ? '🌙' : '☀️'}
+            </button>
+            <Link href="/cart" className="text-gray-600 hover:text-blue-600 transition-colors relative">
               🛒 Cart
+              {cartItemCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                  {cartItemCount}
+                </span>
+              )}
             </Link>
+            {isAuthenticated ? (
+              <div className="flex items-center space-x-2">
+                <span className="text-gray-600 text-sm">
+                  Hello, {user?.name}
+                </span>
+                <button
+                  onClick={logout}
+                  className="text-gray-600 hover:text-blue-600 transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <Link href="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
+                Login
+              </Link>
+            )}
           </div>
         </div>
 

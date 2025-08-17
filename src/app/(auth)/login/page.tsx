@@ -2,11 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface LoginForm {
-  email: string;
-  password: string;
-}
+import { useForm, FormProvider } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { loginSchema, LoginForm } from '../../../lib/formValidation';
+import { TextInput, EmailInput, PasswordInput, SubmitButton } from '../../../components/forms/FormComponents';
+import { useAuth } from '../../../contexts/AppContext';
 
 interface LoginResponse {
   success: boolean;
@@ -26,14 +26,19 @@ interface LoginResponse {
 }
 
 const LoginPage: React.FC = () => {
-  const [form, setForm] = useState<LoginForm>({
-    email: '',
-    password: ''
-  });
+  const router = useRouter();
+  const { login } = useAuth();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const router = useRouter();
+
+  const methods = useForm<LoginForm>({
+    resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: '',
+      password: '',
+    },
+  });
 
   // Check if user is already authenticated
   useEffect(() => {
@@ -56,16 +61,7 @@ const LoginPage: React.FC = () => {
     checkAuth();
   }, [router]);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setForm(prev => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (data: LoginForm) => {
     setLoading(true);
     setError(null);
     setSuccess(null);
@@ -78,17 +74,22 @@ const LoginPage: React.FC = () => {
           'Accept': 'application/json'
         },
         credentials: 'include',
-        body: JSON.stringify(form)
+        body: JSON.stringify(data)
       });
 
-      const data: LoginResponse = await response.json();
+      const responseData: LoginResponse = await response.json();
 
-      if (response.ok && data.success) {
+      if (response.ok && responseData.success) {
         setSuccess('Login successful! Redirecting...');
 
-        // Store user info in localStorage for client-side access
-        if (data.data?.user) {
-          localStorage.setItem('user', JSON.stringify(data.data.user));
+        // Use context to login user
+        if (responseData.data?.user) {
+          login({
+            id: responseData.data.user.id,
+            name: responseData.data.user.name,
+            email: responseData.data.user.email,
+            role: responseData.data.user.role as 'user' | 'admin',
+          });
         }
 
         // Redirect to dashboard after a short delay
@@ -96,12 +97,14 @@ const LoginPage: React.FC = () => {
           router.push('/dashboard');
         }, 1000);
       } else {
-        setError(data.message || 'Login failed');
+        setError(responseData.message || 'Login failed');
       }
     } catch (err) {
       setError('Network error. Please try again.');
     } finally {
       setLoading(false);
+    }
+  };
     }
   };
 
@@ -162,108 +165,73 @@ const LoginPage: React.FC = () => {
         </p>
       </div>
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          <form className="space-y-6" onSubmit={handleSubmit}>
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email address
-              </label>
-              <div className="mt-1">
-                <input
-                  id="email"
+              <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+          <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
+            <FormProvider {...methods}>
+              <form className="space-y-6" onSubmit={methods.handleSubmit(onSubmit)}>
+                <EmailInput
                   name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={form.email}
-                  onChange={handleInputChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                  label="Email address"
                   placeholder="Enter your email"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
-              </label>
-              <div className="mt-1">
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
                   required
-                  value={form.password}
-                  onChange={handleInputChange}
-                  className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+                />
+
+                <PasswordInput
+                  name="password"
+                  label="Password"
                   placeholder="Enter your password"
+                  required
                 />
-              </div>
-            </div>
 
-            <div className="flex items-center justify-between">
-              <div className="flex items-center">
-                <input
-                  id="remember-me"
-                  name="remember-me"
-                  type="checkbox"
-                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                />
-                <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
-                  Remember me
-                </label>
-              </div>
-
-              <div className="text-sm">
-                <a href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
-                  Forgot your password?
-                </a>
-              </div>
-            </div>
-
-            {error && (
-              <div className="rounded-md bg-red-50 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">
-                      {error}
-                    </h3>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {success && (
-              <div className="rounded-md bg-green-50 p-4">
-                <div className="flex">
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-green-800">
-                      {success}
-                    </h3>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div>
-              <button
-                type="submit"
-                disabled={loading}
-                className="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
+                <div className="flex items-center justify-between">
                   <div className="flex items-center">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Signing in...
+                    <input
+                      id="remember-me"
+                      name="remember-me"
+                      type="checkbox"
+                      className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                    />
+                    <label htmlFor="remember-me" className="ml-2 block text-sm text-gray-900">
+                      Remember me
+                    </label>
                   </div>
-                ) : (
-                  'Sign in'
+
+                  <div className="text-sm">
+                    <a href="/forgot-password" className="font-medium text-blue-600 hover:text-blue-500">
+                      Forgot your password?
+                    </a>
+                  </div>
+                </div>
+
+                {error && (
+                  <div className="rounded-md bg-red-50 p-4">
+                    <div className="flex">
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-red-800">
+                          {error}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </button>
-            </div>
-          </form>
+
+                {success && (
+                  <div className="rounded-md bg-green-50 p-4">
+                    <div className="flex">
+                      <div className="ml-3">
+                        <h3 className="text-sm font-medium text-green-800">
+                          {success}
+                        </h3>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <SubmitButton loading={loading}>
+                  Sign in
+                </SubmitButton>
+              </form>
+            </FormProvider>
 
           <div className="mt-6">
             <div className="relative">
