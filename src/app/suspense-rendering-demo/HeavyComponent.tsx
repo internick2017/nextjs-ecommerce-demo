@@ -1,36 +1,48 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { usePerformanceMonitoring } from '../../../lib/renderingOptimizer';
+import { usePerformanceMonitoring } from '../../lib/renderingOptimizer';
+
+interface HeavyItem {
+  id: number;
+  name: string;
+  value: number;
+  timestamp: string;
+  metadata: {
+    category: string;
+    priority: number;
+    tags: string[];
+  };
+}
 
 const HeavyComponent: React.FC = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<HeavyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const metrics = usePerformanceMonitoring('HeavyComponent');
 
+  const generateHeavyData = (): HeavyItem[] => {
+    return Array.from({ length: 1000 }, (_, index) => ({
+      id: index,
+      name: `Heavy Item ${index}`,
+      value: Math.random() * 1000,
+      timestamp: new Date().toISOString(),
+      metadata: {
+        category: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
+        priority: Math.floor(Math.random() * 10) + 1,
+        tags: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, i) => `tag-${i}`)
+      }
+    }));
+  };
+
   useEffect(() => {
     // Simulate heavy computation
-    const generateHeavyData = () => {
-      const items = Array.from({ length: 1000 }, (_, index) => ({
-        id: index,
-        name: `Heavy Item ${index}`,
-        value: Math.random() * 1000,
-        timestamp: new Date().toISOString(),
-        metadata: {
-          category: ['A', 'B', 'C', 'D'][Math.floor(Math.random() * 4)],
-          priority: Math.floor(Math.random() * 10) + 1,
-          tags: Array.from({ length: Math.floor(Math.random() * 5) + 1 }, (_, i) => `tag-${i}`)
-        }
-      }));
+    const items = generateHeavyData();
 
-      // Simulate processing delay
-      setTimeout(() => {
-        setData(items);
-        setLoading(false);
-      }, 1500);
-    };
-
-    generateHeavyData();
+    // Simulate processing delay
+    setTimeout(() => {
+      setData(items);
+      setLoading(false);
+    }, 1500);
   }, []);
 
   if (loading) {

@@ -119,7 +119,6 @@ export default function Navigation() {
                       userButtonTrigger: 'focus:shadow-none',
                     },
                   }}
-                  afterSignOutUrl="/"
                 />
               </div>
             ) : (

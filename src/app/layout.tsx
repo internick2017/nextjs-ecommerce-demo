@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { ClerkProvider } from '@clerk/nextjs';
-import { AppContextProvider } from '../contexts/AppContext';
+import { AppProvider } from '../contexts/AppContext';
 import Navigation from '../components/Navigation';
 import GlobalErrorMonitor from '../components/GlobalErrorMonitor';
 
@@ -16,7 +16,7 @@ export const metadata: Metadata = {
 export default function RootLayout({
   children,
 }: {
-  children: React.ReactNode;
+  readonly children: React.ReactNode;
 }) {
   return (
     <ClerkProvider
@@ -38,13 +38,13 @@ export default function RootLayout({
     >
       <html lang="en">
         <body className={inter.className}>
-          <AppContextProvider>
+          <AppProvider>
             <GlobalErrorMonitor />
             <Navigation />
             <main className="min-h-screen bg-gray-50">
               {children}
             </main>
-          </AppContextProvider>
+                      </AppProvider>
         </body>
       </html>
     </ClerkProvider>
