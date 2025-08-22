@@ -105,8 +105,6 @@ const LoginPage: React.FC = () => {
       setLoading(false);
     }
   };
-    }
-  };
 
   const handleDemoLogin = async (type: 'user' | 'admin') => {
     setLoading(true);

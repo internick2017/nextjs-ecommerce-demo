@@ -485,11 +485,4 @@ export async function getAllDataAction() {
   return db.getAllData();
 }
 
-// Utility functions
-export function getFieldError(errors: Record<string, string[]> | undefined, field: string): string | undefined {
-  return errors?.[field]?.[0];
-}
-
-export function hasFieldError(errors: Record<string, string[]> | undefined, field: string): boolean {
-  return !!errors?.[field]?.length;
-}
+// Utility functions moved to formUtils.ts

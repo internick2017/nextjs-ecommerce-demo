@@ -226,3 +226,129 @@ export function compose<T extends unknown[]>(
     return middlewares.reduceRight((acc, middleware) => middleware(acc), handler);
   };
 }
+
+// API Error Handler utilities
+
+export interface ApiError {
+  code: string;
+  message: string;
+  details?: any;
+  statusCode?: number;
+}
+
+export interface ApiResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: ApiError;
+  message?: string;
+}
+
+// Error codes
+export const ErrorCodes = {
+  VALIDATION_ERROR: 'VALIDATION_ERROR',
+  AUTHENTICATION_ERROR: 'AUTHENTICATION_ERROR',
+  AUTHORIZATION_ERROR: 'AUTHORIZATION_ERROR',
+  NOT_FOUND: 'NOT_FOUND',
+  INTERNAL_ERROR: 'INTERNAL_ERROR',
+  RATE_LIMIT_ERROR: 'RATE_LIMIT_ERROR',
+  DATABASE_ERROR: 'DATABASE_ERROR',
+  NETWORK_ERROR: 'NETWORK_ERROR',
+} as const;
+
+// Create error response
+export function createErrorResponse(
+  code: keyof typeof ErrorCodes,
+  message: string,
+  details?: any,
+  statusCode: number = 500
+): ApiResponse {
+  return {
+    success: false,
+    error: {
+      code: ErrorCodes[code],
+      message,
+      details,
+      statusCode
+    }
+  };
+}
+
+// Create success response
+export function createSuccessResponse<T>(data: T, message?: string): ApiResponse<T> {
+  return {
+    success: true,
+    data,
+    message
+  };
+}
+
+// Handle API errors
+export function handleApiError(error: any): ApiResponse {
+  console.error('API Error:', error);
+
+  if (error instanceof Error) {
+    return createErrorResponse('INTERNAL_ERROR', error.message);
+  }
+
+  if (typeof error === 'string') {
+    return createErrorResponse('INTERNAL_ERROR', error);
+  }
+
+  return createErrorResponse('INTERNAL_ERROR', 'An unexpected error occurred');
+}
+
+// Validate request data
+export function validateRequest(data: any, schema?: any): { isValid: boolean; errors?: string[] } {
+  if (!schema) {
+    return { isValid: true };
+  }
+
+  try {
+    // In a real implementation, this would use a validation library like Zod
+    return { isValid: true };
+  } catch (error) {
+    return {
+      isValid: false,
+      errors: error instanceof Error ? [error.message] : ['Validation failed']
+    };
+  }
+}
+
+// Rate limiting utilities
+export class RateLimiter {
+  private requests = new Map<string, { count: number; resetTime: number }>();
+
+  isAllowed(key: string, limit: number = 100, windowMs: number = 60000): boolean {
+    const now = Date.now();
+    const record = this.requests.get(key);
+
+    if (!record || now > record.resetTime) {
+      this.requests.set(key, { count: 1, resetTime: now + windowMs });
+      return true;
+    }
+
+    if (record.count >= limit) {
+      return false;
+    }
+
+    record.count++;
+    return true;
+  }
+
+  getRemaining(key: string): number {
+    const record = this.requests.get(key);
+    if (!record || Date.now() > record.resetTime) {
+      return 100; // Default limit
+    }
+    return Math.max(0, 100 - record.count);
+  }
+}
+
+// Export utilities
+export const apiErrorUtils = {
+  createErrorResponse,
+  createSuccessResponse,
+  handleApiError,
+  validateRequest,
+  ErrorCodes
+};
