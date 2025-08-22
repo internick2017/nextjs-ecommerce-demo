@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useAuth, useCart, useUI } from '../contexts/AppContext';
+import { UserButton, SignInButton, useUser } from '@clerk/nextjs';
+import { useCart, useUI } from '../contexts/AppContext';
 
 export default function Navigation() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pathname = usePathname();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { isSignedIn, user } = useUser();
   const { cartItemCount } = useCart();
   const { theme, setTheme } = useUI();
 
@@ -17,6 +18,7 @@ export default function Navigation() {
     { href: '/products', label: 'Products' },
     { href: '/cart', label: 'Cart' },
     { href: '/dashboard', label: 'Dashboard' },
+    { href: '/clerk-demo', label: 'Clerk Auth Demo' },
     { href: '/api-demo', label: 'API Demo' },
     { href: '/crud-demo', label: 'CRUD Demo' },
     { href: '/headers-cookies-demo', label: 'Headers & Cookies Demo' },
@@ -33,7 +35,6 @@ export default function Navigation() {
     { href: '/optimistic-actions-demo', label: 'Optimistic Actions Demo' },
     { href: '/error-handling-demo', label: 'Error Demo' },
     { href: '/global-error-demo', label: 'Global Error Demo' },
-    { href: '/login', label: 'Login' },
   ];
 
   const isActiveLink = (href: string) => {
@@ -86,12 +87,16 @@ export default function Navigation() {
           </div>
 
           <div className="flex items-center space-x-4">
+            {/* Theme Toggle */}
             <button
               onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
               className="text-gray-600 hover:text-blue-600 transition-colors p-2 rounded-md"
+              aria-label="Toggle theme"
             >
               {theme === 'light' ? '🌙' : '☀️'}
             </button>
+
+            {/* Cart */}
             <Link href="/cart" className="text-gray-600 hover:text-blue-600 transition-colors relative">
               🛒 Cart
               {cartItemCount > 0 && (
@@ -100,22 +105,29 @@ export default function Navigation() {
                 </span>
               )}
             </Link>
-            {isAuthenticated ? (
+
+            {/* Authentication */}
+            {isSignedIn ? (
               <div className="flex items-center space-x-2">
-                <span className="text-gray-600 text-sm">
-                  Hello, {user?.name}
+                <span className="text-gray-600 text-sm hidden sm:block">
+                  Hello, {user?.firstName || user?.emailAddresses[0]?.emailAddress}
                 </span>
-                <button
-                  onClick={logout}
-                  className="text-gray-600 hover:text-blue-600 transition-colors"
-                >
-                  Logout
-                </button>
+                <UserButton
+                  appearance={{
+                    elements: {
+                      userButtonAvatarBox: 'w-8 h-8',
+                      userButtonTrigger: 'focus:shadow-none',
+                    },
+                  }}
+                  afterSignOutUrl="/"
+                />
               </div>
             ) : (
-              <Link href="/login" className="text-gray-600 hover:text-blue-600 transition-colors">
-                Login
-              </Link>
+              <SignInButton mode="modal">
+                <button className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors">
+                  Sign In
+                </button>
+              </SignInButton>
             )}
           </div>
         </div>
@@ -138,6 +150,17 @@ export default function Navigation() {
                   {link.label}
                 </Link>
               ))}
+
+              {/* Mobile Auth */}
+              {!isSignedIn && (
+                <div className="pt-4 border-t border-gray-200">
+                  <SignInButton mode="modal">
+                    <button className="w-full bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-md text-sm font-medium transition-colors">
+                      Sign In
+                    </button>
+                  </SignInButton>
+                </div>
+              )}
             </div>
           </div>
         )}

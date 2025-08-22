@@ -1,109 +1,52 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
-import "./globals.css";
-import Navigation from "../components/Navigation";
-import GlobalErrorBoundary from "../components/GlobalErrorBoundary";
-import GlobalErrorMonitor from "../components/GlobalErrorMonitor";
-import { AppProvider } from "../contexts/AppContext";
-import { NotificationSystem } from "../components/NotificationSystem";
-import Link from "next/link";
+import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
+import './globals.css';
+import { ClerkProvider } from '@clerk/nextjs';
+import { AppContextProvider } from '../contexts/AppContext';
+import Navigation from '../components/Navigation';
+import GlobalErrorMonitor from '../components/GlobalErrorMonitor';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: "Next.js E-Commerce Store",
-  description: "A comprehensive showcase of Next.js features through an e-commerce application",
+  title: 'Next.js Ecommerce Demo',
+  description: 'Advanced Next.js features demonstration with authentication',
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
-    <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        <GlobalErrorBoundary
-          enableGlobalErrorHandling={true}
-          showErrorDetails={process.env.NODE_ENV === 'development'}
-          onGlobalError={(event) => {
-            console.log('Global error detected:', event);
-          }}
-        >
-          <AppProvider>
-            <div className="min-h-screen bg-gray-50">
-              <Navigation />
-              <main className="container mx-auto px-4 py-8">
-                {children}
-              </main>
-            </div>
-            <NotificationSystem />
+    <ClerkProvider
+      appearance={{
+        elements: {
+          formButtonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white',
+          card: 'bg-white shadow-lg rounded-lg',
+          headerTitle: 'text-2xl font-bold text-gray-900',
+          headerSubtitle: 'text-gray-600',
+          socialButtonsBlockButton: 'bg-gray-100 hover:bg-gray-200 text-gray-900',
+          formFieldInput: 'border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500',
+          footerActionLink: 'text-blue-600 hover:text-blue-700',
+        },
+        layout: {
+          socialButtonsPlacement: 'bottom',
+          showOptionalFields: false,
+        },
+      }}
+    >
+      <html lang="en">
+        <body className={inter.className}>
+          <AppContextProvider>
             <GlobalErrorMonitor />
-          </AppProvider>
-        </GlobalErrorBoundary>
-        <footer className="bg-gray-800 text-white py-12 mt-16">
-          <div className="container mx-auto px-4">
-            <div className="grid md:grid-cols-4 gap-8">
-              {/* Brand Section */}
-              <div className="md:col-span-2">
-                <h3 className="text-xl font-bold text-blue-400 mb-4">NextJS Store</h3>
-                <p className="text-gray-300 mb-4">
-                  A comprehensive showcase of Next.js features including App Router,
-                  Server Components, Static Generation, and modern e-commerce functionality.
-                </p>
-                <div className="flex space-x-4">
-                  <a href="https://nextjs.org" target="_blank" rel="noopener noreferrer"
-                     className="text-gray-400 hover:text-white transition-colors">
-                    Next.js Docs
-                  </a>
-                  <a href="https://github.com" target="_blank" rel="noopener noreferrer"
-                     className="text-gray-400 hover:text-white transition-colors">
-                    GitHub
-                  </a>
-                </div>
-              </div>
-
-              {/* Quick Links */}
-              <div>
-                <h4 className="font-semibold mb-4">Quick Links</h4>
-                <ul className="space-y-2">
-                  <li><Link href="/" className="text-gray-400 hover:text-white transition-colors">Home</Link></li>
-                  <li><Link href="/products" className="text-gray-400 hover:text-white transition-colors">Products</Link></li>
-                  <li><a href="/cart" className="text-gray-400 hover:text-white transition-colors">Shopping Cart</a></li>
-                  <li><a href="/dashboard" className="text-gray-400 hover:text-white transition-colors">Dashboard</a></li>
-                </ul>
-              </div>
-
-              {/* Features */}
-              <div>
-                <h4 className="font-semibold mb-4">Features</h4>
-                <ul className="space-y-2">
-                  <li><a href="/api-demo" className="text-gray-400 hover:text-white transition-colors">API Routes</a></li>
-                  <li><a href="/login" className="text-gray-400 hover:text-white transition-colors">Authentication</a></li>
-                  <li><Link href="/server-components" className="text-gray-400 hover:text-white transition-colors">Server Components</Link></li>
-                  <li><Link href="/static-generation" className="text-gray-400 hover:text-white transition-colors">Static Generation</Link></li>
-                </ul>
-              </div>
-            </div>
-
-            <div className="border-t border-gray-700 mt-8 pt-8 text-center">
-              <p className="text-gray-400">
-                &copy; 2024 Next.js E-Commerce Store. Built to showcase Next.js features.
-              </p>
-            </div>
-          </div>
-        </footer>
-      </body>
-    </html>
+            <Navigation />
+            <main className="min-h-screen bg-gray-50">
+              {children}
+            </main>
+          </AppContextProvider>
+        </body>
+      </html>
+    </ClerkProvider>
   );
 }

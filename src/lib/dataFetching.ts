@@ -454,14 +454,4 @@ export function useSWR<T>(
   };
 }
 
-// Export utilities
-export {
-  ServerDataFetcher,
-  ClientDataFetcher,
-  QueryClient,
-  useQuery,
-  useMutation,
-  getServerData,
-  getServerDataSafe,
-  useSWR,
-};
+// Export utilities - removing duplicate exports

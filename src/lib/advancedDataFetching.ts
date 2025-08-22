@@ -412,69 +412,9 @@ export function AdvancedLoadingIndicator({
     return null;
   }
 
-  return (
-    <div className="fixed top-4 right-4 z-50 bg-white rounded-lg shadow-lg p-4 max-w-sm">
-      {/* Overall Progress */}
-      {loadingManager.isAnyLoading() && (
-        <div className="mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <span className="text-sm font-medium text-gray-700">Overall Progress</span>
-            <span className="text-sm text-gray-500">{overallProgress}%</span>
-          </div>
-          <div className="w-full bg-gray-200 rounded-full h-2">
-            <div
-              className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-              style={{ width: `${overallProgress}%` }}
-            ></div>
-          </div>
-        </div>
-      )}
-
-      {/* Individual Loading States */}
-      {Object.entries(loadingStates).map(([key, state]) => (
-        <div key={key} className="mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-sm font-medium text-gray-700">{key}</span>
-            {state.progress !== undefined && (
-              <span className="text-xs text-gray-500">{state.progress}%</span>
-            )}
-          </div>
-          {state.progress !== undefined && (
-            <div className="w-full bg-gray-200 rounded-full h-1">
-              <div
-                className="bg-green-500 h-1 rounded-full transition-all duration-300"
-                style={{ width: `${state.progress}%` }}
-              ></div>
-            </div>
-          )}
-          {state.message && (
-            <p className="text-xs text-gray-500 mt-1">{state.message}</p>
-          )}
-        </div>
-      ))}
-
-      {/* Error States */}
-      {Object.entries(errorStates).map(([key, error]) => (
-        <div key={key} className="mb-3 p-2 bg-red-50 border border-red-200 rounded">
-          <div className="flex items-center justify-between">
-            <span className="text-sm font-medium text-red-700">{key}</span>
-            <span className="text-xs text-red-500">
-              {error.retryCount}/{error.maxRetries}
-            </span>
-          </div>
-          <p className="text-xs text-red-600 mt-1">{error.error}</p>
-          {errorManager.canRetry(key) && onRetry && (
-            <button
-              onClick={onRetry}
-              className="mt-2 text-xs bg-red-600 text-white px-2 py-1 rounded hover:bg-red-700"
-            >
-              Retry
-            </button>
-          )}
-        </div>
-      ))}
-    </div>
-  );
+  // This function should return a React component, but since this is a .ts file,
+  // we'll return null and move the component to a separate .tsx file
+  return null;
 }
 
 // Utility functions

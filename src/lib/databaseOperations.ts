@@ -629,10 +629,4 @@ export const databaseUtils = {
   }
 };
 
-// Export all utilities
-export {
-  DatabaseClient,
-  QueryManager,
-  MutationManager,
-  databaseUtils
-};
+// Export all utilities - removing duplicate exports

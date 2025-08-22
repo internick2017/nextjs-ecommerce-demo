@@ -6,9 +6,12 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "deploy": "./scripts/deploy.sh",
+    "deploy:vercel": "vercel --prod"
   },
   "dependencies": {
+    "@clerk/nextjs": "^6.31.4",
     "@hookform/resolvers": "^5.2.1",
     "next": "15.4.5",
     "react": "19.1.0",
